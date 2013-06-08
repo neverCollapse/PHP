@@ -1,0 +1,136 @@
+<?php
+ 
+  require_once  "Book_class.php";
+  require_once  "DBHelper_class.php";
+
+  class BookModel extends DBHelper
+  {
+  	/*插入书籍信息*/
+      public function addBook ($book)
+      {
+     
+      	$query = "insert into book (book_name,book_price,book_author,book_time,book_pub,book_intro,book_image,book_dir) values (?,?,?,?,?,?,?,?)";
+        $stmt = $this->mysqli->prepare($query);
+        $stmt -> bind_param('sdssssss',$book_name,$book_price,$book_author,$book_time,$book_pub,$book_intro,$book_image,$book_dir);
+        $book_name=$book->getBook_name();
+        $book_price=$book->getBook_price();
+        $book_author=$book->getBook_author();
+        $book_time=$book->getBook_time();
+        $book_pub=$book->getBook_pub();
+        $book_intro=$book->getBook_intro();
+        $book_image=$book->getBook_image();
+        $book_dir=$book->getBook_dir();
+        $stmt->execute();
+        if($stmt->affected_rows!=1)
+        {
+        	$this->printError("数据插入失败:".$stmt->error);
+        	return FALSE;
+        }
+        else
+        {
+        	return TRUE;
+        }
+      }
+      /*删除书籍信息*/
+       public function deleteBook($bookID)
+       {
+
+        // delete image
+        $book = $this->selectSingleBook($bookID);
+        unlink('../upload/images/'.$book->getBook_image());
+        //delete db
+       	$query = "delete from book where book_id='".$bookID."'";
+         	if($this->mysqli->query($query))
+         	{
+       	         return TRUE;
+       	     }
+       	    else
+       	    {
+       	    	$this->printError("数据删除失败");
+       	    	return FALSE;
+       	    }
+       }
+      /*修改书籍信息*/
+      public function modifyBook($book)
+      {
+            // delete image
+           $prebook = $this->selectSingleBook($book->getId());
+           if($prebook->getBook_image() != $book->getBook_image()){
+              unlink('../upload/images/'.$prebook->getBook_image());
+           }
+           $query = "update book set book_name=?,book_price=?,book_author=?,book_time=?,book_pub=?,book_intro=?,book_dir=?,book_image=? where book_id=?";
+           $stmt = $this->mysqli->prepare($query);
+           $stmt ->bind_param('sdssssssi',$book_name,$book_price,$book_author,$book_time,$book_pub,$book_intro,$book_dir,$book_image,$book_id);
+           $book_name=$book->getBook_name();
+           $book_price=$book->getBook_price();
+           $book_author=$book->getBook_author();
+           $book_time=$book->getBook_time();
+           $book_pub=$book->getBook_pub();
+           $book_intro=$book->getBook_intro();
+           $book_dir=$book->getBook_dir();
+           $book_image = $book->getBook_image();
+           $book_id=$book->getId();
+           $stmt->execute();
+           if($stmt->affected_rows!=1)
+           {
+
+        	  $this->printError("数据未更改或更新失败");
+               $stmt->close();
+           	return FALSE;
+           }
+           else
+           {
+               $stmt->close();
+        	     return TRUE;
+           }
+      }
+      /*获取表中的一条记录*/
+     public function selectSingleBook($bookID)
+     {
+     	$query = "select * from book where book_id ='".$bookID."'";
+     	if($result = $this->mysqli->query($query)){
+     		if($row=$result->fetch_assoc()){
+     			$book = new Book($row);
+     			 $result->close();
+     			 return $book;
+     		}
+     		else
+     		{
+     			$result->close();
+     			$this->printError("获取数据失败");
+     			return FALSE;
+     		}
+     	}
+     	else{
+     		$this->printError("数据查询失败");
+     		return FALSE;
+     	}
+     }
+     /*全部数据*/
+     public function selectAllBook()
+     {
+     	$query = "select * from book order by book_id";
+     	if($result=$this->mysqli->query($query)){
+     		if($result->num_rows)
+     		{
+     			while ($row=$result->fetch_assoc())
+     			{
+     				$allBook []= new Book($row);
+     			}
+     				$result->close();
+     				return $allBook; 
+     		}
+     		else
+     		{
+     			$result->close();
+     			return FALSE;
+     		}
+     	}
+     	else
+     	{
+     		$this->printError("数据查询失败");
+     			return FALSE;
+     	}
+     }
+  }
+?>
